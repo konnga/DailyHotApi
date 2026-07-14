@@ -1,6 +1,7 @@
 import type { RouterData, ListContext, Options, RouterResType } from "../types.js";
-import { post } from "../utils/getData.js";
+import { get, post } from "../utils/getData.js";
 import { getTime } from "../utils/getTime.js";
+import { parseRSS } from "../utils/parseRSS.js";
 
 const typeMap: Record<string, string> = {
   hot: "人气榜",
@@ -53,46 +54,81 @@ interface KrResponse {
   data: KrListData;
 }
 
+let gatewayUnavailable = false;
+
 const getList = async (options: Options, noCache: boolean): Promise<RouterResType> => {
   const { type } = options;
   const url = `https://gateway.36kr.com/api/mis/nav/home/nav/rank/${type}`;
-  const result = await post<KrResponse>({
-    url,
-    noCache,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-    },
-    body: {
-      partner_id: "wap",
-      param: {
-        siteId: 1,
-        platformId: 2,
-      },
-      timestamp: new Date().getTime(),
-    },
-  });
-  const listType = {
-    hot: "hotRankList",
-    video: "videoList",
-    comment: "remarkList",
-    collect: "collectList",
-  };
-  const list =
-    result.data.data[(listType as Record<string, keyof typeof result.data.data>)[type || "hot"]];
-  return {
-    ...result,
-    data: list.map((v) => {
-      const item = v.templateMaterial;
-      return {
-        id: v.itemId,
-        title: item.widgetTitle,
-        cover: item.widgetImage,
-        author: item.authorName,
-        timestamp: getTime(v.publishTime),
-        hot: item.statCollect || undefined,
-        url: `https://www.36kr.com/p/${v.itemId}`,
-        mobileUrl: `https://m.36kr.com/p/${v.itemId}`,
+  if (!gatewayUnavailable) {
+    try {
+      const result = await post<KrResponse>({
+        url,
+        noCache,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          Origin: "https://m.36kr.com",
+          Referer: "https://m.36kr.com/",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/136.0.0.0 Safari/537.36",
+        },
+        body: {
+          partner_id: "wap",
+          param: {
+            siteId: 1,
+            platformId: 2,
+          },
+          timestamp: new Date().getTime(),
+        },
+      });
+      const listType = {
+        hot: "hotRankList",
+        video: "videoList",
+        comment: "remarkList",
+        collect: "collectList",
       };
-    }),
+      const list =
+        result.data.data[
+          (listType as Record<string, keyof typeof result.data.data>)[type || "hot"]
+        ];
+      return {
+        ...result,
+        data: list.map((v) => {
+          const item = v.templateMaterial;
+          return {
+            id: v.itemId,
+            title: item.widgetTitle,
+            cover: item.widgetImage,
+            author: item.authorName,
+            timestamp: getTime(v.publishTime),
+            hot: item.statCollect || undefined,
+            url: `https://www.36kr.com/p/${v.itemId}`,
+            mobileUrl: `https://m.36kr.com/p/${v.itemId}`,
+          };
+        }),
+      };
+    } catch {
+      gatewayUnavailable = true;
+    }
+  }
+
+  const feed = await get<string>({
+    url: "https://36kr.com/feed",
+    noCache,
+    responseType: "text",
+  });
+  const items = await parseRSS(feed.data);
+  return {
+    fromCache: feed.fromCache,
+    updateTime: feed.updateTime,
+    data: items.map((item, index) => ({
+      id: item.guid || item.link || index,
+      title: item.title || "",
+      author: item.author,
+      desc: item.contentSnippet,
+      hot: undefined,
+      timestamp: item.pubDate ? getTime(item.pubDate) : undefined,
+      url: item.link || "https://36kr.com/",
+      mobileUrl: item.link || "https://m.36kr.com/",
+    })),
   };
 };

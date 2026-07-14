@@ -98,11 +98,25 @@ export const post = async <T = unknown>(options: Post): Promise<RequestResult<T>
       }
     }
     // 缓存不存在时请求接口
-    const response = await request.post(url, body, { headers });
-    const responseData = response?.data || response;
+    const normalizedHeaders = Object.fromEntries(
+      Object.entries(headers ?? {}).map(([key, value]) => [
+        key,
+        Array.isArray(value) ? value.join(", ") : value,
+      ]),
+    );
+    const requestBody =
+      typeof body === "string" || body instanceof Uint8Array ? body : JSON.stringify(body);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: normalizedHeaders,
+      body: requestBody,
+      signal: AbortSignal.timeout(config.REQUEST_TIMEOUT),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const responseData = (await response.json()) as T;
     // 存储新获取的数据到缓存
     const updateTime = new Date().toISOString();
-    const data = originaInfo ? response : responseData;
+    const data = originaInfo ? { status: response.status, data: responseData } : responseData;
     if (!noCache) {
       await setCache(url, { data, updateTime }, ttl);
     }

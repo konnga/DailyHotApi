@@ -2,8 +2,10 @@ import type { RouterData } from "../types.js";
 import { getTime } from "../utils/getTime.js";
 import axios from "axios";
 
-export const handleRoute = async (_: undefined, noCache: boolean) => {
-  const listData = await getList(noCache);
+export const handleRoute = async (context: undefined, noCache: boolean) => {
+  void context;
+  void noCache;
+  const listData = await getList();
   const routeData: RouterData = {
     name: "huxiu",
     title: "虎嗅",
@@ -39,7 +41,7 @@ interface HuxiuApiResponse {
   };
 }
 
-const getList = async (noCache: boolean) => {
+const getList = async () => {
   // PC 端接口
   const url = `https://moment-api.huxiu.com/web-v3/moment/feed?platform=www`;
   const res = await axios.get<HuxiuApiResponse>(url, {

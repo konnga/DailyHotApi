@@ -19,5 +19,5 @@ FILTER_WEIBO_ADVERTISEMENT = "false"
 
 # Run `pnpm exec wrangler kv namespace create CACHE`, then replace this value.
 [[kv_namespaces]]
-binding = "CACHE"
-id = "00000000000000000000000000000000"
+binding = "KV"
+id = "5eac08c474874c059536ab6b7a13a376"

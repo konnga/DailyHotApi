@@ -2,6 +2,4 @@ name = "dailyhot-api"
 main = "src/index.js" # 指向你适配后的入口文件
 compatibility_date = "2026-07-14"
 
-[compatibility_flags]
-# 必须开启 Node.js 兼容性标志，因为原项目大量依赖了 Node.js 原生模块（如 crypto, buffer 等）
-node_compat = true 
+compatibility_flags = [ "nodejs_compat" ]

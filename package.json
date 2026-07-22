@@ -34,6 +34,9 @@
     "cf:dev": "wrangler dev",
     "cf:check": "wrangler deploy --dry-run",
     "cf:deploy": "wrangler deploy",
+    "cf:pages:build": "node scripts/build-pages.mjs",
+    "cf:pages:dev": "pnpm cf:pages:build && wrangler pages dev --cwd pages",
+    "cf:pages:deploy": "pnpm cf:pages:build && wrangler pages deploy --cwd pages",
     "build": "tsc --project tsconfig.json",
     "start": "cross-env NODE_ENV=development node dist/index.js"
   },

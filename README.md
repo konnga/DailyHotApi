@@ -182,6 +182,35 @@ sh ./deploy.sh
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/imsyys-projects/clone?repository-url=https%3A%2F%2Fgithub.com%2Fimsyy%2FDailyHotApi-Vercel)
 
+### Cloudflare Pages Functions 部署
+
+Pages Functions 部署与现有 Cloudflare Worker 相互独立，可用于在不迁移主域名 DNS 的情况下绑定第三方 DNS 服务商管理的子域名。
+
+首先构建并在本地预览：
+
+```bash
+pnpm cf:pages:build
+pnpm cf:pages:dev
+```
+
+在 Cloudflare Dashboard 中创建名为 `dailyhot-api-pages` 的 Pages 项目后执行部署：
+
+```bash
+pnpm cf:pages:deploy
+```
+
+部署成功并确认 `https://dailyhot-api-pages-2ov.pages.dev` 功能正常后，在 Pages 项目的 `Custom domains` 中先添加 `da.haotab.link`，再到腾讯云 DNSPod 添加以下记录：
+
+```text
+记录类型：CNAME
+主机记录：da
+记录值：dailyhot-api-pages-2ov.pages.dev
+```
+
+Pages 项目沿用现有 KV Namespace，并通过 `CACHE` 绑定访问缓存。现有 Worker 不会被 Pages 的构建或部署命令修改，可继续作为回退入口。
+
+Pages 默认只允许 `https://haotab.link` 和 `https://www.haotab.link` 发起浏览器跨域请求。`ALLOWED_DOMAIN` 支持使用英文逗号配置多个精确 Origin；如需允许某个主域名下的全部 HTTPS 子域名，可另外配置 `ALLOWED_HOST`。
+
 ### Railway 部署
 
 本项目支持使用 [Railway](https://railway.app/) 一键部署，请先将本项目 fork 到您的仓库中，即可使用一键部署。

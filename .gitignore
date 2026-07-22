@@ -11,6 +11,8 @@ node_modules
 .wrangler
 .DS_Store
 dist
+pages/dist
+pages/.worker-build
 *.local
 .env
 

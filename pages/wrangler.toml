@@ -1,11 +1,7 @@
-name = "dailyhot-api"
-main = "src/worker.ts"
+name = "dailyhot-api-pages"
+pages_build_output_dir = "./dist"
 compatibility_date = "2026-07-14"
 compatibility_flags = ["nodejs_compat"]
-
-[assets]
-directory = "./public"
-binding = "ASSETS"
 
 [vars]
 CACHE_TTL = "3600"
@@ -17,7 +13,6 @@ USE_LOG_FILE = "false"
 RSS_MODE = "false"
 FILTER_WEIBO_ADVERTISEMENT = "false"
 
-# Run `pnpm exec wrangler kv namespace create CACHE`, then replace this value.
 [[kv_namespaces]]
 binding = "CACHE"
 id = "5eac08c474874c059536ab6b7a13a376"

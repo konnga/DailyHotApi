@@ -23,6 +23,11 @@ export const createApp = ({
   compressResponses = true,
 }: CreateAppOptions): Hono => {
   const app = new Hono();
+  const allowedOrigins = new Set(
+    config.ALLOWED_DOMAIN.split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  );
 
   if (compressResponses) app.use(compress());
   app.use(prettyJSON());
@@ -31,20 +36,31 @@ export const createApp = ({
     "*",
     cors({
       origin: (origin) => {
-        if (config.ALLOWED_DOMAIN === "*") return origin || "*";
-        const isAllowedHost = config.ALLOWED_HOST && origin.endsWith(config.ALLOWED_HOST);
-        return isAllowedHost ? origin : config.ALLOWED_DOMAIN;
+        if (allowedOrigins.has("*")) return "*";
+        if (allowedOrigins.has(origin)) return origin;
+        if (!config.ALLOWED_HOST) return null;
+
+        try {
+          const url = new URL(origin);
+          const allowedHost = config.ALLOWED_HOST.toLowerCase();
+          const isAllowedHost =
+            url.protocol === "https:" &&
+            (url.hostname === allowedHost || url.hostname.endsWith(`.${allowedHost}`));
+          return isAllowedHost ? origin : null;
+        } catch {
+          return null;
+        }
       },
       allowMethods: ["POST", "GET", "OPTIONS"],
       allowHeaders: ["X-Custom-Header", "Upgrade-Insecure-Requests"],
-      credentials: true,
+      credentials: false,
     }),
   );
 
   if (staticMiddleware) app.use("/*", staticMiddleware);
 
-  app.route("/", registry);
   app.get("/robots.txt", robotstxt);
+  app.route("/", registry);
   app.get("/", (c) => c.html(<Home />));
   app.notFound((c) => c.html(<NotFound />, 404));
   app.onError((error, c) => {
